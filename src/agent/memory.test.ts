@@ -7,7 +7,7 @@ vi.mock("../db/client", () => ({
     insert: vi.fn().mockReturnThis(),
     values: vi.fn().mockReturnThis(),
     onConflictDoNothing: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockResolvedValue([{ id: "test-id", content: "encrypted", contentHash: "hash", metadata: {}, scope: "global", scopeId: null, tags: [], importance: 5, createdAt: new Date() }]),
+    returning: vi.fn().mockResolvedValue([{ id: "test-id", content: "encrypted:Test memory", contentHash: "hash", metadata: {}, scope: "global", scopeId: null, tags: ["test"], importance: 7, createdAt: new Date() }]),
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
@@ -27,15 +27,19 @@ vi.mock("../utils/crypto", () => ({
 }));
 
 // Mock logger
-vi.mock("../obs/logger", () => ({
-  logger: {
-    child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-    withTrace: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }),
-    withTool: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-    withStep: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-  },
-  createRequestLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-}));
+vi.mock("../obs/logger", () => {
+  const logMethods = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+  return {
+    logger: {
+      ...logMethods,
+      child: () => ({ ...logMethods, child: () => logMethods }),
+      withTrace: () => ({ ...logMethods, child: () => logMethods }),
+      withTool: () => logMethods,
+      withStep: () => logMethods,
+    },
+    createRequestLogger: () => logMethods,
+  };
+});
 
 // Mock metrics
 vi.mock("../obs/metrics", () => ({

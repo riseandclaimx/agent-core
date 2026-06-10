@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock Upstash
 vi.mock("@upstash/qstash", () => ({
-  QStash: vi.fn().mockImplementation(() => ({
+  Client: vi.fn().mockImplementation(() => ({
     publishJSON: vi.fn().mockResolvedValue({ messageId: "msg_123" }),
-    deleteMessage: vi.fn().mockResolvedValue(true),
+    messages: { delete: vi.fn().mockResolvedValue(true) },
   })),
 }));
 
@@ -16,12 +16,17 @@ vi.mock("@upstash/redis", () => ({
     zcard: vi.fn().mockResolvedValue(0),
     zadd: vi.fn().mockResolvedValue(1),
     expire: vi.fn().mockResolvedValue(1),
+    zrange: vi.fn().mockResolvedValue([]),
     eval: vi.fn().mockResolvedValue(1),
   })),
 }));
 
 vi.mock("../obs/logger", () => ({
-  logger: { child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) },
+  logger: {
+    child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 vi.mock("../obs/metrics", () => ({
@@ -36,6 +41,10 @@ vi.mock("../utils/id", () => ({
 describe("Upstash Queue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Ensure env vars are set for lazy init
+    process.env.QSTASH_TOKEN = "test-token";
+    process.env.QSTASH_URL = "https://test.upstash.io";
+    process.env.WORKER_URL = "http://localhost:8788";
   });
 
   it("enqueueTask returns task ID and message ID", async () => {

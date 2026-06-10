@@ -81,7 +81,7 @@ async function handleAgentCommand({ command, ack, respond, client, context }: an
     await client.chat.postMessage({
       channel: command.channel_id,
       thread_ts: command.thread_ts || command.ts,
-      text: agentResponse.text,
+      text: agentResult.text,
       blocks: agentResult.blocks || [
         { type: "section", text: { type: "mrkdwn", text: agentResult.text } },
         {
@@ -147,7 +147,7 @@ async function handleCreateTask(
   );
 
   await respond({
-    text: agentResult.text,
+    text: result.text,
     blocks: taskStatusMessage("new_task", "pending", `Created: ${name}\n${description}`),
   });
 }
@@ -250,7 +250,16 @@ async function handleMemorySearch(command: any, respond: any, query: string) {
   }
 
   const results = await memory.searchMemories({ query, limit: 5 });
-  await respond({ blocks: memory.searchMemories ? [] : [] }); // Would format results
+  if (results.length === 0) {
+    await respond({ text: `🔍 No memories found for: *${query}*`, response_type: "ephemeral" });
+    return;
+  }
+  await respond({
+    blocks: results.map((r, i) => ({
+      type: "section",
+      text: { type: "mrkdwn", text: `${i + 1}. ${r.memory.content.slice(0, 300)}` },
+    })),
+  });
 }
 
 async function handleMemoryWrite(command: any, respond: any, content: string) {

@@ -320,13 +320,13 @@ export function getToolSchema(name: ToolName) {
 
 /** Get all tool schemas */
 export function getAllToolSchemas() {
-  return (Object.keys(toolDefinitions) as any[]).map((n: any) => getToolSchema(n));
+  return (Object.keys(toolDefinitions) as ToolName[]).map((n) => getToolSchema(n));
 }
 
 /** Get tools by namespace */
 export function getToolsByNamespace(namespace: string) {
   const prefix = `${namespace}.`;
-  return Object.keys(toolDefinitions)
+  return (Object.keys(toolDefinitions) as ToolName[])
     .filter((k) => k.startsWith(prefix))
     .map(getToolSchema);
 }

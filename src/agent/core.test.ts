@@ -40,9 +40,16 @@ vi.mock("./tools/registry", () => ({
   toolRegistry: { getAll: vi.fn().mockReturnValue([{ name: "memory.search", namespace: "memory" }]) },
 }));
 
-vi.mock("../obs/logger", () => ({
-  logger: { child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), withTrace: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }) },
-}));
+vi.mock("../obs/logger", () => {
+  const logMethods = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+  return {
+    logger: {
+      ...logMethods,
+      child: () => ({ ...logMethods, child: () => logMethods }),
+      withTrace: () => ({ ...logMethods, child: () => logMethods }),
+    },
+  };
+});
 
 vi.mock("../obs/metrics", () => ({
   metrics: { timing: vi.fn(), gauge: vi.fn() },

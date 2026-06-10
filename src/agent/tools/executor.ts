@@ -22,16 +22,17 @@ export async function executeTool(
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      timeoutId = setTimeout(() => controller.abort(), timeout);
 
       const result = await toolRegistry.execute(name, args, {
         ...context,
         metadata: { ...(context as any).metadata, attempt },
       });
 
-      clearTimeout(timeout as any)
+      clearTimeout(timeoutId);
 
       if (attempt > 0) {
         metrics.increment(METRICS.TOOL_RETRIES, { tool: name, attempt: String(attempt) });
@@ -41,7 +42,7 @@ export async function executeTool(
       return { success: true, result };
     } catch (error) {
       lastError = error as Error;
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (attempt < maxRetries) {
         log.warn("Tool failed, retrying");

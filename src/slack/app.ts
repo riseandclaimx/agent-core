@@ -3,7 +3,7 @@ import createRequestListener from "@slack/bolt/dist/receivers/ExpressReceiver";
 import { logger } from "../obs/logger";
 import { generateTraceId } from "../utils/id";
 import { agent, AgentContext } from "../agent/index";
-import { verifySlackRequest } from "./middleware/auth";
+import { verifySlackRequest, verifySlackSignature } from "./middleware/auth";
 import { addContext } from "./middleware/context";
 import { rateLimit } from "./middleware/rate-limit";
 import { handleCommands } from "./handlers/commands";
@@ -12,16 +12,16 @@ import { handleShortcuts } from "./handlers/shortcuts";
 import { handleModals } from "./handlers/modals";
 import { handleInteractions } from "./handlers/interactions";
 
-const signingSecret = process.env.SLACK_SIGNING_SECRET;
-const botToken = process.env.SLACK_BOT_TOKEN;
-const appToken = process.env.SLACK_APP_TOKEN; // For Socket Mode
-
-if (!signingSecret || !botToken) {
-  throw new Error("SLACK_SIGNING_SECRET and SLACK_BOT_TOKEN are required");
-}
-
 /** Create Bolt app for Cloudflare Workers */
 export function createSlackApp(): App {
+  const signingSecret = process.env.SLACK_SIGNING_SECRET;
+  const botToken = process.env.SLACK_BOT_TOKEN;
+  const appToken = process.env.SLACK_APP_TOKEN; // For Socket Mode
+
+  if (!signingSecret || !botToken) {
+    throw new Error("SLACK_SIGNING_SECRET and SLACK_BOT_TOKEN are required");
+  }
+
   const app = new App({
     signingSecret,
     token: botToken,
@@ -81,7 +81,7 @@ export async function handleSlackRequest(
       return new Response("Missing Slack headers", { status: 400 });
     }
 
-    if (!verifySignature(body, timestamp, signature, env.SLACK_SIGNING_SECRET)) {
+    if (!verifyRequestSignature(body, timestamp, signature, env.SLACK_SIGNING_SECRET)) {
       log.warn("Invalid Slack signature");
       return new Response("Invalid signature", { status: 401 });
     }
@@ -107,18 +107,14 @@ export async function handleSlackRequest(
   }
 }
 
-/** Verify Slack request signature */
-function verifySignature(
+/** Verify Slack request signature (Workers-compatible via imported crypto utils) */
+function verifyRequestSignature(
   body: string,
   timestamp: string,
   signature: string,
   signingSecret: string
 ): boolean {
-  const crypto = require("crypto");
-  const hmac = crypto.createHmac("sha256", signingSecret);
-  hmac.update(`v0:${timestamp}:${body}`);
-  const expected = `v0=${hmac.digest("hex")}`;
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  return verifySlackSignature(body, timestamp, signature, signingSecret);
 }
 
 /** Process Slack payload */
@@ -138,7 +134,7 @@ async function processPayload(payload: any, traceId: string, botToken: string): 
     case "shortcut":
       return handleShortcut(payload, traceId, botToken);
     default:
-      log.warn("Unhandled payload type", undefined, { type: payload.type });
+      log.warn("Unhandled payload type", { type: payload.type });
       return { ok: true };
   }
 }

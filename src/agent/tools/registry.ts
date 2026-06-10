@@ -6,7 +6,7 @@ import { modelRouter, costTracker } from "../router/index";
 import { enqueueTask, getTaskStatus, checkRateLimit } from "../../queue/upstash";
 import { getDb } from "../../db/client";
 import { logs, analyticsEvents, modelUsage } from "../../db/schema/index";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { generateId } from "../../utils/id";
 
 type ToolHandler = (args: unknown, context: ToolContext) => Promise<unknown>;

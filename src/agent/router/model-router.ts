@@ -158,26 +158,6 @@ export class ModelRouter {
 
 export const modelRouter = new ModelRouter();
 
-/** Get the client for a specific provider */
-export function getProviderClient(provider: string): ModelClient {
-  switch (provider) {
-    case "groq":
-      return groqClient;
-    case "deepseek":
-      return deepseekClient;
-    case "gemini":
-      return geminiClient;
-    case "openai":
-      return openaiClient;
-    case "anthropic":
-      return anthropicClient;
-    case "cerebras":
-      return cerebrasClient;
-    default:
-      throw new Error(`Unknown provider: ${provider}`);
-  }
-}
-
 /** Unified model client interface */
 export interface ModelClient {
   chat(completion: ChatCompletionRequest): Promise<ChatCompletionResponse>;
@@ -258,21 +238,344 @@ export interface ChatChunkChoice {
   finishReason: ChatChoice["finishReason"] | null;
 }
 
-/** Placeholder clients - implement with actual SDKs */
-const groqClient: ModelClient = createPlaceholderClient("groq");
-const deepseekClient: ModelClient = createPlaceholderClient("deepseek");
-const geminiClient: ModelClient = createPlaceholderClient("gemini");
-const openaiClient: ModelClient = createPlaceholderClient("openai");
-const anthropicClient: ModelClient = createPlaceholderClient("anthropic");
-const cerebrasClient: ModelClient = createPlaceholderClient("cerebras");
+// ── Provider configurations ──────────────────────────────────────────────────
+// Most providers expose an OpenAI-compatible /chat/completions endpoint.
 
-function createPlaceholderClient(provider: string): ModelClient {
+interface ProviderConfig {
+  baseUrl: string;
+  envKey: string; // name of the env var holding the API key
+  /** Optional: transform the model name before sending to the API */
+  modelTransform?: (model: string) => string;
+}
+
+const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
+  groq: {
+    baseUrl: "https://api.groq.com/openai/v1",
+    envKey: "GROQ_API_KEY",
+  },
+  deepseek: {
+    baseUrl: "https://api.deepseek.com/v1",
+    envKey: "DEEPSEEK_API_KEY",
+  },
+  openai: {
+    baseUrl: "https://api.openai.com/v1",
+    envKey: "OPENAI_API_KEY",
+  },
+  anthropic: {
+    // Use Anthropic's Messages API via OpenAI-compat proxy, or native
+    baseUrl: "https://api.anthropic.com/v1",
+    envKey: "ANTHROPIC_API_KEY",
+  },
+  gemini: {
+    // Gemini via Google's OpenAI-compatible endpoint
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    envKey: "GEMINI_API_KEY",
+  },
+  cerebras: {
+    baseUrl: "https://api.cerebras.ai/v1",
+    envKey: "CEREBRAS_API_KEY",
+  },
+};
+
+// ── OpenAI-compatible client factory ─────────────────────────────────────────
+
+function formatMessages(messages: ChatMessage[]): any[] {
+  return messages.map((m) => {
+    const msg: any = { role: m.role };
+    if (typeof m.content === "string") {
+      msg.content = m.content;
+    } else if (Array.isArray(m.content)) {
+      msg.content = m.content.map((part) => {
+        if (part.type === "text") return { type: "text", text: part.text };
+        if (part.type === "image_url") return { type: "image_url", image_url: part.imageUrl };
+        return part;
+      });
+    }
+    if (m.name) msg.name = m.name;
+    if (m.toolCallId) msg.tool_call_id = m.toolCallId;
+    if (m.toolCalls) msg.tool_calls = m.toolCalls;
+    return msg;
+  });
+}
+
+function parseResponse(raw: any): ChatCompletionResponse {
   return {
-    async chat() {
-      throw new Error(`${provider} client not implemented yet`);
-    },
-    async *streamChat() {
-      throw new Error(`${provider} client not implemented yet`);
+    id: raw.id ?? "",
+    model: raw.model ?? "",
+    created: raw.created ?? Math.floor(Date.now() / 1000),
+    choices: (raw.choices ?? []).map((c: any, i: number) => ({
+      index: c.index ?? i,
+      message: {
+        role: c.message?.role ?? "assistant",
+        content: c.message?.content ?? "",
+        toolCalls: c.message?.tool_calls?.map((tc: any) => ({
+          id: tc.id,
+          type: "function" as const,
+          function: { name: tc.function.name, arguments: tc.function.arguments },
+        })),
+      },
+      finishReason: mapFinishReason(c.finish_reason),
+    })),
+    usage: {
+      promptTokens: raw.usage?.prompt_tokens ?? 0,
+      completionTokens: raw.usage?.completion_tokens ?? 0,
+      totalTokens: raw.usage?.total_tokens ?? 0,
     },
   };
+}
+
+function mapFinishReason(reason: string | null | undefined): ChatChoice["finishReason"] {
+  switch (reason) {
+    case "stop": return "stop";
+    case "length": return "length";
+    case "tool_calls": return "tool_calls";
+    case "content_filter": return "content_filter";
+    default: return "stop";
+  }
+}
+
+function createOpenAICompatibleClient(provider: string): ModelClient {
+  const config = PROVIDER_CONFIGS[provider];
+  if (!config) throw new Error(`Unknown provider: ${provider}`);
+
+  return {
+    async chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
+      const apiKey = process.env[config.envKey];
+      if (!apiKey) throw new Error(`${config.envKey} env var not set`);
+
+      const model = config.modelTransform?.(request.model) ?? request.model;
+
+      const body: any = {
+        model,
+        messages: formatMessages(request.messages),
+      };
+      if (request.tools && request.tools.length > 0) body.tools = request.tools;
+      if (request.toolChoice) body.tool_choice = request.toolChoice;
+      if (request.temperature !== undefined) body.temperature = request.temperature;
+      if (request.maxTokens) body.max_tokens = request.maxTokens;
+      if (request.topP !== undefined) body.top_p = request.topP;
+
+      const res = await fetch(`${config.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`${provider} API error (${res.status}): ${errorBody}`);
+      }
+
+      const raw = await res.json();
+      return parseResponse(raw);
+    },
+
+    async *streamChat(request: ChatCompletionRequest): AsyncIterable<ChatCompletionChunk> {
+      const apiKey = process.env[config.envKey];
+      if (!apiKey) throw new Error(`${config.envKey} env var not set`);
+
+      const model = config.modelTransform?.(request.model) ?? request.model;
+
+      const body: any = {
+        model,
+        messages: formatMessages(request.messages),
+        stream: true,
+      };
+      if (request.tools && request.tools.length > 0) body.tools = request.tools;
+      if (request.toolChoice) body.tool_choice = request.toolChoice;
+      if (request.temperature !== undefined) body.temperature = request.temperature;
+      if (request.maxTokens) body.max_tokens = request.maxTokens;
+      if (request.topP !== undefined) body.top_p = request.topP;
+
+      const res = await fetch(`${config.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`${provider} streaming API error (${res.status}): ${errorBody}`);
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+          const data = trimmed.slice(6);
+          if (data === "[DONE]") return;
+
+          try {
+            const raw = JSON.parse(data);
+            yield {
+              id: raw.id ?? "",
+              model: raw.model ?? "",
+              choices: (raw.choices ?? []).map((c: any, i: number) => ({
+                index: c.index ?? i,
+                delta: {
+                  role: c.delta?.role,
+                  content: c.delta?.content,
+                  toolCalls: c.delta?.tool_calls,
+                },
+                finishReason: mapFinishReason(c.finish_reason),
+              })),
+              usage: raw.usage ? {
+                promptTokens: raw.usage.prompt_tokens ?? 0,
+                completionTokens: raw.usage.completion_tokens ?? 0,
+                totalTokens: raw.usage.total_tokens ?? 0,
+              } : undefined,
+            };
+          } catch {
+            // Skip malformed SSE lines
+          }
+        }
+      }
+    },
+  };
+}
+
+// ── Anthropic native client (Messages API, not OpenAI-compatible) ────────────
+
+function createAnthropicClient(): ModelClient {
+  return {
+    async chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) throw new Error("ANTHROPIC_API_KEY env var not set");
+
+      // Extract system message
+      const systemMsg = request.messages.find((m) => m.role === "system");
+      const nonSystemMsgs = request.messages.filter((m) => m.role !== "system");
+
+      const body: any = {
+        model: request.model,
+        max_tokens: request.maxTokens ?? 4096,
+        messages: nonSystemMsgs.map((m) => ({
+          role: m.role === "tool" ? "user" : m.role,
+          content: typeof m.content === "string" ? m.content : m.content?.map((p) => {
+            if (p.type === "text") return { type: "text", text: p.text };
+            if (p.type === "image_url") return { type: "image", source: { type: "url", url: p.imageUrl?.url } };
+            return p;
+          }),
+          ...(m.toolCallId && { tool_use_id: m.toolCallId }),
+        })),
+      };
+      if (systemMsg) body.system = typeof systemMsg.content === "string" ? systemMsg.content : "";
+      if (request.tools?.length) {
+        body.tools = request.tools.map((t) => ({
+          name: t.function.name,
+          description: t.function.description,
+          input_schema: t.function.parameters,
+        }));
+      }
+      if (request.temperature !== undefined) body.temperature = request.temperature;
+      if (request.topP !== undefined) body.top_p = request.topP;
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`Anthropic API error (${res.status}): ${errorBody}`);
+      }
+
+      const raw: any = await res.json();
+
+      // Map Anthropic response → unified format
+      let textContent = "";
+      const toolCalls: ToolCall[] = [];
+
+      for (const block of raw.content ?? []) {
+        if (block.type === "text") textContent += block.text;
+        if (block.type === "tool_use") {
+          toolCalls.push({
+            id: block.id,
+            type: "function",
+            function: { name: block.name, arguments: JSON.stringify(block.input) },
+          });
+        }
+      }
+
+      return {
+        id: raw.id ?? "",
+        model: raw.model ?? request.model,
+        created: Math.floor(Date.now() / 1000),
+        choices: [{
+          index: 0,
+          message: {
+            role: "assistant",
+            content: textContent,
+            ...(toolCalls.length > 0 && { toolCalls }),
+          },
+          finishReason: raw.stop_reason === "tool_use" ? "tool_calls" : "stop",
+        }],
+        usage: {
+          promptTokens: raw.usage?.input_tokens ?? 0,
+          completionTokens: raw.usage?.output_tokens ?? 0,
+          totalTokens: (raw.usage?.input_tokens ?? 0) + (raw.usage?.output_tokens ?? 0),
+        },
+      };
+    },
+
+    async *streamChat(request: ChatCompletionRequest): AsyncIterable<ChatCompletionChunk> {
+      // For now, fall back to non-streaming and yield the full result
+      const response = await this.chat(request);
+      yield {
+        id: response.id,
+        model: response.model,
+        choices: response.choices.map((c) => ({
+          index: c.index,
+          delta: c.message,
+          finishReason: c.finishReason,
+        })),
+        usage: response.usage,
+      };
+    },
+  };
+}
+
+// ── Client instances (lazy via getProviderClient) ────────────────────────────
+
+const clientCache = new Map<string, ModelClient>();
+
+/** Get the client for a specific provider */
+export function getProviderClient(provider: string): ModelClient {
+  let client = clientCache.get(provider);
+  if (client) return client;
+
+  if (provider === "anthropic") {
+    client = createAnthropicClient();
+  } else if (PROVIDER_CONFIGS[provider]) {
+    client = createOpenAICompatibleClient(provider);
+  } else {
+    throw new Error(`Unknown provider: ${provider}`);
+  }
+
+  clientCache.set(provider, client);
+  return client;
 }

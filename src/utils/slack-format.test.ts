@@ -37,7 +37,7 @@ describe("Slack formatting", () => {
 
   it("richMessage creates complete message", () => {
     const blocks = richMessage("Title", ["Section 1", "Section 2"], [button("Action", "act")], "Context text");
-    expect(blocks.length).toBe(5); // header, divider, 2 sections, actions, context
+    expect(blocks.length).toBe(6); // header, divider, 2 sections, actions, context
     expect(blocks[0].type).toBe("header");
     expect(blocks[1].type).toBe("divider");
   });
