@@ -18,7 +18,7 @@ process.env.SLACK_BOT_TOKEN = "xoxb-test";
 process.env.UPSTASH_REDIS_REST_URL = "https://test.upstash.io";
 process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
 process.env.GROQ_API_KEY = "gsk-test";
-process.env.ENCRYPTION_KEY = "dGVzdC1lbmNyeXB0aW9uLWtleS10aGlydHktYnl0ZXM="; // base64 32 bytes
+process.env.ENCRYPTION_KEY = "SHkgfTtH1o3xdmuxfBAOw610EZe7CmKGCn72AuVue84"; // base64url 32 bytes
 process.env.WORKER_URL = "http://localhost:8788";
 
 // Mock timers

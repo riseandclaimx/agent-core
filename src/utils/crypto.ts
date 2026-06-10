@@ -1,11 +1,11 @@
 import { createHmac, createCipheriv, createDecipheriv, randomBytes, timingSafeEqual as nodeTSE } from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
-const KEY_ENV = process.env.ENCRYPTION_KEY;
 
 function getKey(): Buffer {
-  if (!KEY_ENV) throw new Error("ENCRYPTION_KEY env var not set");
-  return Buffer.from(KEY_ENV, "base64url");
+  const keyEnv = process.env.ENCRYPTION_KEY;
+  if (!keyEnv) throw new Error("ENCRYPTION_KEY env var not set");
+  return Buffer.from(keyEnv, "base64url");
 }
 
 export function encrypt(plaintext: string): string {

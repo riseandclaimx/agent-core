@@ -41,7 +41,9 @@ const EMBEDDING_DIMENSIONS = 1536;
 
 /** Memory system for agent - global + user-scoped with pgvector */
 export class MemorySystem {
-  private db = getDb();
+  private get db() {
+    return getDb();
+  }
 
   /** Store a new memory */
   async writeMemory(entry: Omit<MemoryEntry, "id" | "createdAt">): Promise<MemoryEntry> {
@@ -253,17 +255,80 @@ export class MemorySystem {
       });
   }
 
-  /** Generate embedding for text (placeholder - integrate with your embedding provider) */
+  /** Generate embedding for text using configured provider */
   async generateEmbedding(text: string): Promise<number[]> {
-    // TODO: Integrate with Cohere, OpenAI, Gemini, or local embedding model
-    // For now, return a deterministic pseudo-embedding for testing
+    // Try providers in order of preference (free first)
+    const providers = [
+      { envKey: "GEMINI_API_KEY", fn: this.embedWithGemini.bind(this) },
+      { envKey: "OPENAI_API_KEY", fn: this.embedWithOpenAI.bind(this) },
+    ];
+
+    for (const { envKey, fn } of providers) {
+      if (process.env[envKey]) {
+        try {
+          return await fn(text);
+        } catch (error) {
+          logger.warn("Embedding provider failed, trying next", { provider: envKey, error: (error as Error).message });
+        }
+      }
+    }
+
+    // Fallback: deterministic pseudo-embedding (keyword-only, no semantic search)
+    logger.warn("No embedding provider configured — falling back to pseudo-embeddings");
+    return this.pseudoEmbedding(text);
+  }
+
+  /** Gemini embedding (free tier available, 768 dims by default — pad to 1536) */
+  private async embedWithGemini(text: string): Promise<number[]> {
+    const apiKey = process.env.GEMINI_API_KEY!;
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "models/text-embedding-004",
+          content: { parts: [{ text }] },
+          outputDimensionality: EMBEDDING_DIMENSIONS,
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`Gemini embedding error (${res.status}): ${await res.text()}`);
+    const data: any = await res.json();
+    const values: number[] = data.embedding?.values ?? [];
+    // Pad or truncate to expected dimensions
+    while (values.length < EMBEDDING_DIMENSIONS) values.push(0);
+    return values.slice(0, EMBEDDING_DIMENSIONS);
+  }
+
+  /** OpenAI embedding (text-embedding-3-small, 1536 dims) */
+  private async embedWithOpenAI(text: string): Promise<number[]> {
+    const apiKey = process.env.OPENAI_API_KEY!;
+    const res = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "text-embedding-3-small",
+        input: text,
+        dimensions: EMBEDDING_DIMENSIONS,
+      }),
+    });
+    if (!res.ok) throw new Error(`OpenAI embedding error (${res.status}): ${await res.text()}`);
+    const data: any = await res.json();
+    return data.data?.[0]?.embedding ?? [];
+  }
+
+  /** Deterministic pseudo-embedding fallback (no semantic search) */
+  private async pseudoEmbedding(text: string): Promise<number[]> {
     const hash = await this.hashContent(text);
     const embedding = new Array(EMBEDDING_DIMENSIONS).fill(0);
     for (let i = 0; i < hash.length; i += 2) {
       const idx = parseInt(hash.slice(i, i + 2), 16) % EMBEDDING_DIMENSIONS;
       embedding[idx] = (parseInt(hash.slice(i, i + 2), 16) / 255) * 2 - 1;
     }
-    // Normalize
     const norm = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
     return embedding.map((v) => v / (norm || 1));
   }

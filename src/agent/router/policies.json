@@ -5,7 +5,11 @@
     "groq:openai/gpt-oss-20b": {
       "provider": "groq",
       "model": "openai/gpt-oss-20b",
-      "capabilities": ["chat", "tools", "reasoning"],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning"
+      ],
       "contextWindow": 131072,
       "costPer1MIn": 0,
       "costPer1MOut": 0,
@@ -16,7 +20,11 @@
     "groq:llama-3.3-70b-versatile": {
       "provider": "groq",
       "model": "llama-3.3-70b-versatile",
-      "capabilities": ["chat", "tools", "reasoning"],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning"
+      ],
       "contextWindow": 131072,
       "costPer1MIn": 0,
       "costPer1MOut": 0,
@@ -27,7 +35,10 @@
     "groq:llama-3.1-8b-instant": {
       "provider": "groq",
       "model": "llama-3.1-8b-instant",
-      "capabilities": ["chat", "tools"],
+      "capabilities": [
+        "chat",
+        "tools"
+      ],
       "contextWindow": 131072,
       "costPer1MIn": 0,
       "costPer1MOut": 0,
@@ -38,7 +49,12 @@
     "deepseek:deepseek-chat": {
       "provider": "deepseek",
       "model": "deepseek-chat",
-      "capabilities": ["chat", "tools", "reasoning", "coding"],
+      "capabilities": [
+        "chat",
+        "tools",
+        "reasoning",
+        "coding"
+      ],
       "contextWindow": 65536,
       "costPer1MIn": 0.14,
       "costPer1MOut": 0.28,
@@ -49,7 +65,11 @@
     "deepseek:deepseek-reasoner": {
       "provider": "deepseek",
       "model": "deepseek-reasoner",
-      "capabilities": ["chat", "reasoning", "coding"],
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "coding"
+      ],
       "contextWindow": 65536,
       "costPer1MIn": 0.55,
       "costPer1MOut": 2.19,
@@ -60,7 +80,12 @@
     "gemini:gemini-1.5-flash": {
       "provider": "gemini",
       "model": "gemini-1.5-flash",
-      "capabilities": ["chat", "tools", "vision", "long_context"],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision",
+        "long_context"
+      ],
       "contextWindow": 1048576,
       "costPer1MIn": 0.075,
       "costPer1MOut": 0.3,
@@ -71,7 +96,13 @@
     "gemini:gemini-1.5-pro": {
       "provider": "gemini",
       "model": "gemini-1.5-pro",
-      "capabilities": ["chat", "tools", "vision", "long_context", "reasoning"],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision",
+        "long_context",
+        "reasoning"
+      ],
       "contextWindow": 2097152,
       "costPer1MIn": 3.5,
       "costPer1MOut": 10.5,
@@ -82,7 +113,12 @@
     "openai:gpt-4o-mini": {
       "provider": "openai",
       "model": "gpt-4o-mini",
-      "capabilities": ["chat", "tools", "vision", "reasoning"],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision",
+        "reasoning"
+      ],
       "contextWindow": 128000,
       "costPer1MIn": 0.15,
       "costPer1MOut": 0.6,
@@ -93,7 +129,12 @@
     "openai:gpt-4o": {
       "provider": "openai",
       "model": "gpt-4o",
-      "capabilities": ["chat", "tools", "vision", "reasoning"],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision",
+        "reasoning"
+      ],
       "contextWindow": 128000,
       "costPer1MIn": 5,
       "costPer1MOut": 15,
@@ -104,7 +145,13 @@
     "anthropic:claude-3.5-sonnet": {
       "provider": "anthropic",
       "model": "claude-3.5-sonnet",
-      "capabilities": ["chat", "tools", "vision", "reasoning", "coding"],
+      "capabilities": [
+        "chat",
+        "tools",
+        "vision",
+        "reasoning",
+        "coding"
+      ],
       "contextWindow": 200000,
       "costPer1MIn": 3,
       "costPer1MOut": 15,
@@ -115,7 +162,10 @@
     "cerebras:llama-3.3-70b": {
       "provider": "cerebras",
       "model": "llama-3.3-70b",
-      "capabilities": ["chat", "reasoning"],
+      "capabilities": [
+        "chat",
+        "reasoning"
+      ],
       "contextWindow": 8192,
       "costPer1MIn": 0,
       "costPer1MOut": 0,
@@ -128,39 +178,51 @@
     {
       "name": "simple_qa",
       "conditions": {
-        "taskTypes": ["general", "qa", "explanation"],
+        "taskTypes": [
+          "general",
+          "qa",
+          "explanation"
+        ],
         "maxComplexity": "low",
         "requiresTools": false
       },
       "model": "groq:llama-3.1-8b-instant",
-      "fallback": ["groq:openai/gpt-oss-20b", "cerebras:llama-3.3-70b"]
+      "fallback": [
+        "groq:openai/gpt-oss-20b",
+        "cerebras:llama-3.3-70b"
+      ]
     },
     {
       "name": "tool_use",
       "conditions": {
-        "taskTypes": ["general", "automation", "data_retrieval"],
+        "taskTypes": [
+          "general",
+          "automation",
+          "data_retrieval"
+        ],
         "requiresTools": true
       },
       "model": "groq:openai/gpt-oss-20b",
-      "fallback": ["groq:llama-3.3-70b-versatile", "openai:gpt-4o-mini"]
+      "fallback": [
+        "groq:llama-3.3-70b-versatile",
+        "openai:gpt-4o-mini"
+      ]
     },
     {
       "name": "coding",
       "conditions": {
-        "taskTypes": ["coding", "debugging", "code_review"],
+        "taskTypes": [
+          "coding",
+          "debugging",
+          "code_review"
+        ],
         "requiresTools": false
       },
       "model": "deepseek:deepseek-chat",
-      "fallback": ["anthropic:claude-3.5-sonnet", "openai:gpt-4o"]
-    },
-    {
-      "name": "complex_reasoning",
-      "conditions": {
-        "taskTypes": ["analysis", "planning", "strategy", "math"],
-        "minComplexity": "high"
-      },
-      "model": "deepseek:deepseek-reasoner",
-      "fallback": ["anthropic:claude-3.5-sonnet", "openai:gpt-4o"]
+      "fallback": [
+        "anthropic:claude-3.5-sonnet",
+        "openai:gpt-4o"
+      ]
     },
     {
       "name": "long_context",
@@ -168,7 +230,27 @@
         "minContextTokens": 50000
       },
       "model": "gemini:gemini-1.5-flash",
-      "fallback": ["gemini:gemini-1.5-pro", "anthropic:claude-3.5-sonnet"]
+      "fallback": [
+        "gemini:gemini-1.5-pro",
+        "anthropic:claude-3.5-sonnet"
+      ]
+    },
+    {
+      "name": "complex_reasoning",
+      "conditions": {
+        "taskTypes": [
+          "analysis",
+          "planning",
+          "strategy",
+          "math"
+        ],
+        "minComplexity": "high"
+      },
+      "model": "deepseek:deepseek-reasoner",
+      "fallback": [
+        "anthropic:claude-3.5-sonnet",
+        "openai:gpt-4o"
+      ]
     },
     {
       "name": "vision",
@@ -176,7 +258,10 @@
         "requiresVision": true
       },
       "model": "openai:gpt-4o-mini",
-      "fallback": ["gemini:gemini-1.5-flash", "anthropic:claude-3.5-sonnet"]
+      "fallback": [
+        "gemini:gemini-1.5-flash",
+        "anthropic:claude-3.5-sonnet"
+      ]
     },
     {
       "name": "premium_fallback",
@@ -184,12 +269,15 @@
         "premium": true
       },
       "model": "anthropic:claude-3.5-sonnet",
-      "fallback": ["openai:gpt-4o", "gemini:gemini-1.5-pro"]
+      "fallback": [
+        "openai:gpt-4o",
+        "gemini:gemini-1.5-pro"
+      ]
     }
   ],
   "costLimits": {
-    "perRequestUsd": 0.50,
-    "perUserDailyUsd": 5.00,
-    "perTeamDailyUsd": 50.00
+    "perRequestUsd": 0.5,
+    "perUserDailyUsd": 5.0,
+    "perTeamDailyUsd": 50.0
   }
 }

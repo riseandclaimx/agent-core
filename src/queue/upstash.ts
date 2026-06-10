@@ -4,15 +4,33 @@ import { logger } from "../obs/logger";
 import { generateId } from "../utils/id";
 import { metrics, METRICS } from "../obs/metrics";
 
-const qstashUrl = process.env.QSTASH_URL || process.env.UPSTASH_REDIS_REST_URL;
-const qstashToken = process.env.QSTASH_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+// Lazy-initialized clients (env may not be available at import time in Workers)
+let _qstash: QStash | null | undefined;
+let _redis: Redis | null | undefined;
 
-if (!qstashUrl || !qstashToken) {
-  logger.warn("Upstash/QStash not configured - async tasks will not work");
+function getQStash(): QStash | null {
+  if (_qstash !== undefined) return _qstash;
+  const token = process.env.QSTASH_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!token) {
+    logger.warn("QStash not configured - async tasks will not work");
+    _qstash = null;
+    return null;
+  }
+  _qstash = new QStash({ token });
+  return _qstash;
 }
 
-export const qstash = qstashUrl && qstashToken ? new QStash({ token: qstashToken }) : null;
-export const redis = qstashUrl && qstashToken ? new Redis({ url: qstashUrl, token: qstashToken }) : null;
+export function getRedis(): Redis | null {
+  if (_redis !== undefined) return _redis;
+  const url = process.env.QSTASH_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.QSTASH_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    _redis = null;
+    return null;
+  }
+  _redis = new Redis({ url, token });
+  return _redis;
+}
 
 export interface TaskPayload {
   name: string;
@@ -36,6 +54,7 @@ export interface EnqueueResult {
 export async function enqueueTask(payload: TaskPayload): Promise<EnqueueResult> {
   const taskId = generateId("task");
   const log = logger.child({ taskId, component: "queue" });
+  const qstash = getQStash();
 
   if (!qstash) {
     throw new Error("QStash not configured");
@@ -82,9 +101,10 @@ export async function enqueueTask(payload: TaskPayload): Promise<EnqueueResult> 
 
 /** Cancel a scheduled task */
 export async function cancelTask(messageId: string): Promise<boolean> {
+  const qstash = getQStash();
   if (!qstash) return false;
   try {
-    await qstash.delete(messageId);
+    await qstash.messages.delete(messageId);
     return true;
   } catch {
     return false;
@@ -98,6 +118,7 @@ export async function getTaskStatus(taskId: string): Promise<{
   error?: string;
   progress?: number;
 } | null> {
+  const redis = getRedis();
   if (!redis) return null;
   try {
     const data = await redis.get(`task:${taskId}`);
@@ -113,6 +134,7 @@ export async function updateTaskStatus(
   status: "running" | "completed" | "failed",
   data?: { result?: unknown; error?: string; progress?: number }
 ): Promise<void> {
+  const redis = getRedis();
   if (!redis) return;
   try {
     const key = `task:${taskId}`;
@@ -135,6 +157,7 @@ export async function checkRateLimit(
   limit: number,
   windowMs: number
 ): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  const redis = getRedis();
   if (!redis) return { allowed: true, remaining: limit, resetAt: Date.now() + windowMs };
 
   const now = Date.now();
@@ -170,6 +193,7 @@ export async function acquireLock(
   key: string,
   ttlMs = 30000
 ): Promise<{ acquired: boolean; lockId?: string }> {
+  const redis = getRedis();
   if (!redis) return { acquired: true };
   const lockId = generateId("lock");
   const lockKey = `lock:${key}`;
@@ -182,6 +206,7 @@ export async function acquireLock(
 }
 
 export async function releaseLock(key: string, lockId: string): Promise<boolean> {
+  const redis = getRedis();
   if (!redis) return true;
   const lockKey = `lock:${key}`;
   try {
