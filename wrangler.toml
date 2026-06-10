@@ -1,0 +1,32 @@
+name = "agent-core"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[limits]
+cpu_ms = 50000
+
+[vars]
+NODE_ENV = "production"
+LOG_LEVEL = "info"
+AGENT_NAME = "agent"
+DEFAULT_MODEL = "groq:openai/gpt-oss-20b"
+MAX_STEPS = "15"
+MAX_PLAN_STEPS = "8"
+MEMORY_TOP_K = "5"
+MEMORY_SIMILARITY_THRESHOLD = "0.72"
+DATABASE_URL = "postgres://postgres:postgres@localhost:5432/postgres"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "16cf2897ef1041b686c8c008427cc54f"
+preview_id = "0c21be1d844b477e81e01fc0fa176964"
+
+[observability]
+enabled = true
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+
+

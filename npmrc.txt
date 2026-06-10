@@ -1,0 +1,11 @@
+# Use exact versions
+save-exact=true
+
+# Strict peer dependencies
+strict-peer-dependencies=true
+
+# Audit level
+audit-level=moderate
+
+# Fund
+fund=false

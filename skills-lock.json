@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "cuopt-numerical-optimization-api-cli": {
+      "source": "NVIDIA/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cuopt-numerical-optimization-api-cli/SKILL.md",
+      "computedHash": "59349a22b1fccc68e89e435aa3e7b96f0d4d28922ec0810938f3fdf37cfa6420"
+    }
+  }
+}
