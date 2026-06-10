@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent-Core · MCP Client</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a26;
+      --surface-3: #22222e;
+      --border: #2a2a3a;
+      --text: #e8e8f0;
+      --text-dim: #8888a0;
+      --accent: #6c5ce7;
+      --accent-light: #a29bfe;
+      --green: #00b894;
+      --orange: #fdcb6e;
+      --red: #e17055;
+      --blue: #74b9ff;
+      --radius: 12px;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .header .logo {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+    }
+
+    .header .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .header .status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      transition: background 0.3s;
+    }
+
+    .header .status .dot.connected { background: var(--green); }
+    .header .status .dot.connecting { background: var(--orange); animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .header .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    select, button {
+      font-family: var(--font);
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text);
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    select:hover, button:hover { border-color: var(--accent); }
+    button.primary { background: var(--accent); border-color: var(--accent); font-weight: 600; }
+    button.primary:hover { background: var(--accent-light); }
+    button.danger { color: var(--red); }
+
+    /* ── Main layout ───────────────────────────────────────────────── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────────── */
+    .sidebar {
+      width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar h3 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      padding: 16px 16px 8px;
+    }
+
+    .tool-list {
+      list-style: none;
+      padding: 0 8px 16px;
+    }
+
+    .tool-list li {
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--text-dim);
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tool-list li:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .tool-list li .desc {
+      font-family: var(--font);
+      font-size: 11px;
+      color: var(--text-dim);
+      display: block;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+
+    /* ── Chat area ─────────────────────────────────────────────────── */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .messages::-webkit-scrollbar { width: 6px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .msg {
+      display: flex;
+      gap: 12px;
+      max-width: 85%;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.assistant { align-self: flex-start; }
+
+    .msg .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .msg.user .avatar { background: var(--accent); }
+    .msg.assistant .avatar { background: var(--surface-3); border: 1px solid var(--border); }
+
+    .msg .bubble {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user .bubble {
+      background: var(--accent);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.assistant .bubble {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.assistant .bubble code {
+      font-family: var(--mono);
+      background: var(--surface-3);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .msg.assistant .bubble pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      margin: 8px 0;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* Tool call / result cards */
+    .tool-card {
+      margin: 8px 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 12px;
+    }
+
+    .tool-card .tool-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--surface-3);
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+
+    .tool-card .tool-header .icon { font-size: 14px; }
+    .tool-card .tool-header .name { font-weight: 600; color: var(--blue); }
+
+    .tool-card .tool-body {
+      padding: 8px 10px;
+      background: var(--bg);
+      font-family: var(--mono);
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .tool-card.expanded .tool-body { display: block; }
+    .tool-card.error .tool-header { border-left: 3px solid var(--red); }
+    .tool-card.success .tool-header { border-left: 3px solid var(--green); }
+
+    /* Status indicator */
+    .status-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      font-size: 13px;
+      color: var(--text-dim);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .status-bar.active { display: flex; }
+
+    .status-bar .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Input area ────────────────────────────────────────────────── */
+    .input-area {
+      padding: 12px 20px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    textarea {
+      flex: 1;
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      color: var(--text);
+      resize: none;
+      max-height: 160px;
+      line-height: 1.5;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+
+    textarea::placeholder { color: var(--text-dim); }
+
+    .send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .send-btn:hover { background: var(--accent-light); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Empty state ───────────────────────────────────────────────── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 12px;
+      color: var(--text-dim);
+      text-align: center;
+      padding: 40px;
+    }
+
+    .empty-state .icon { font-size: 48px; opacity: 0.3; }
+    .empty-state h2 { font-size: 18px; color: var(--text); }
+    .empty-state p { font-size: 14px; max-width: 400px; line-height: 1.6; }
+
+    /* ── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .msg { max-width: 95%; }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">⚡ Agent-Core</div>
+    <div class="status">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Disconnected</span>
+    </div>
+    <div class="controls">
+      <select id="modelSelect" title="Select model"></select>
+      <button id="connectBtn" class="primary">Connect</button>
+      <button id="clearBtn" title="Clear chat">🗑️</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <h3>🔧 MCP Tools</h3>
+      <ul class="tool-list" id="toolList">
+        <li style="color: var(--text-dim); padding: 12px; font-family: var(--font);">
+          Connect to see tools
+        </li>
+      </ul>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-area">
+      <div class="messages" id="messages">
+        <div class="empty-state" id="emptyState">
+          <div class="icon">⚡</div>
+          <h2>Agent-Core MCP Client</h2>
+          <p>Connect to your MCP server to start chatting with your AI agent. All 20+ tools are available — memory, tasks, analytics, and more.</p>
+          <button class="primary" onclick="connect()" style="margin-top: 8px;">Connect to MCP Server</button>
+        </div>
+      </div>
+
+      <div class="status-bar" id="statusBar">
+        <div class="spinner"></div>
+        <span id="statusBarText">Thinking...</span>
+      </div>
+
+      <div class="input-area">
+        <div class="input-row">
+          <textarea
+            id="input"
+            rows="1"
+            placeholder="Message Agent-Core..."
+            disabled
+          ></textarea>
+          <button class="send-btn" id="sendBtn" disabled onclick="sendMessage()">↑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── State ────────────────────────────────────────────────────────
+    let connected = false;
+    let chatHistory = []; // { role, content }
+    let streaming = false;
+
+    const $ = (s) => document.querySelector(s);
+    const $messages = $("#messages");
+    const $input = $("#input");
+    const $sendBtn = $("#sendBtn");
+    const $connectBtn = $("#connectBtn");
+    const $statusDot = $("#statusDot");
+    const $statusText = $("#statusText");
+    const $modelSelect = $("#modelSelect");
+    const $statusBar = $("#statusBar");
+    const $statusBarText = $("#statusBarText");
+    const $emptyState = $("#emptyState");
+    const $toolList = $("#toolList");
+
+    // ── Init ─────────────────────────────────────────────────────────
+    async function init() {
+      // Load available models
+      try {
+        const res = await fetch("/api/models");
+        const data = await res.json();
+        $modelSelect.innerHTML = "";
+        for (const m of data.models) {
+          const opt = document.createElement("option");
+          opt.value = m.key;
+          opt.textContent = m.label + (m.available ? "" : " (no key)");
+          opt.disabled = !m.available;
+          if (m.key === data.default) opt.selected = true;
+          $modelSelect.appendChild(opt);
+        }
+      } catch (e) {
+        console.error("Failed to load models:", e);
+      }
+    }
+
+    init();
+
+    // ── Connect ──────────────────────────────────────────────────────
+    async function connect() {
+      if (connected) {
+        await disconnect();
+        return;
+      }
+
+      setStatus("connecting", "Connecting...");
+      $connectBtn.textContent = "...";
+
+      try {
+        const res = await fetch("/api/connect", { method: "POST" });
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        connected = true;
+        setStatus("connected", `Connected · ${data.tools.length} tools`);
+        $connectBtn.textContent = "Disconnect";
+        $connectBtn.classList.remove("primary");
+        $connectBtn.classList.add("danger");
+        $input.disabled = false;
+        $sendBtn.disabled = false;
+        $input.focus();
+
+        // Populate tool list
+        $toolList.innerHTML = "";
+        for (const t of data.tools) {
+          const li = document.createElement("li");
+          li.innerHTML = `${t.name}<span class="desc">${t.description}</span>`;
+          li.onclick = () => {
+            $input.value = `Use the ${t.name} tool to `;
+            $input.focus();
+          };
+          $toolList.appendChild(li);
+        }
+
+        if ($emptyState) $emptyState.style.display = "none";
+      } catch (e) {
+        setStatus("disconnected", `Error: ${e.message}`);
+        $connectBtn.textContent = "Connect";
+        $connectBtn.classList.add("primary");
+        $connectBtn.classList.remove("danger");
+      }
+    }
+
+    async function disconnect() {
+      try { await fetch("/api/disconnect", { method: "POST" }); } catch {}
+      connected = false;
+      setStatus("disconnected", "Disconnected");
+      $connectBtn.textContent = "Connect";
+      $connectBtn.classList.add("primary");
+      $connectBtn.classList.remove("danger");
+      $input.disabled = true;
+      $sendBtn.disabled = true;
+    }
+
+    function setStatus(state, text) {
+      $statusDot.className = "dot " + state;
+      $statusText.textContent = text;
+    }
+
+    $connectBtn.onclick = connect;
+
+    // ── Send message ─────────────────────────────────────────────────
+    async function sendMessage() {
+      const text = $input.value.trim();
+      if (!text || streaming) return;
+
+      // Add user message
+      chatHistory.push({ role: "user", content: text });
+      addMessageBubble("user", text);
+      $input.value = "";
+      autoResizeInput();
+
+      streaming = true;
+      $sendBtn.disabled = true;
+      $statusBar.classList.add("active");
+      $statusBarText.textContent = "Thinking...";
+
+      // Create assistant bubble to stream into
+      const assistantBubble = addMessageBubble("assistant", "");
+      let fullText = "";
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: chatHistory.filter((m) => m.role !== "system"),
+            model: $modelSelect.value,
+          }),
+        });
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              const event = line.slice(7);
+              const nextLine = lines[lines.indexOf(line) + 1];
+              // handled below
+            }
+            if (line.startsWith("data: ")) {
+              const raw = line.slice(6);
+              try {
+                const data = JSON.parse(raw);
+                handleSSE(data, assistantBubble, (t) => { fullText = t; });
+              } catch {}
+            }
+          }
+        }
+
+        // Final — add to history
+        if (fullText) {
+          chatHistory.push({ role: "assistant", content: fullText });
+        }
+      } catch (e) {
+        assistantBubble.innerHTML += `\n<span style="color:var(--red)">Error: ${e.message}</span>`;
+      }
+
+      streaming = false;
+      $sendBtn.disabled = false;
+      $statusBar.classList.remove("active");
+      scrollToBottom();
+    }
+
+    let lastEventType = "";
+
+    function handleSSE(data, bubble, setFullText) {
+      if (data.status) {
+        $statusBarText.textContent =
+          data.status === "thinking" ? `Round ${data.round} · Thinking...` :
+          data.status === "calling_tools" ? `Round ${data.round} · Calling ${data.count} tool(s)...` :
+          data.status;
+        return;
+      }
+
+      if (data.content !== undefined) {
+        // Text chunk
+        const current = bubble.textContent || "";
+        bubble.textContent = current + data.content;
+        setFullText(current + data.content);
+        scrollToBottom();
+        return;
+      }
+
+      if (data.id && data.name && data.args !== undefined) {
+        // Tool call
+        const card = createToolCard("call", data.name, data.args);
+        bubble.appendChild(card);
+        scrollToBottom();
+        return;
+      }
+
+      if (data.id && data.name && data.result !== undefined) {
+        // Tool result
+        const card = createToolCard("result", data.name, data.result);
+        bubble.appendChild(card);
+        scrollToBottom();
+        return;
+      }
+
+      if (data.id && data.error) {
+        const card = createToolCard("error", data.name || "unknown", data.error);
+        bubble.appendChild(card);
+        scrollToBottom();
+        return;
+      }
+
+      if (data.message && !data.content) {
+        // Error or warning
+        const isError = !data.rounds;
+        bubble.innerHTML += `\n<span style="color:${isError ? "var(--red)" : "var(--orange)"}">${data.message}</span>`;
+        scrollToBottom();
+      }
+    }
+
+    function createToolCard(type, name, content) {
+      const card = document.createElement("div");
+      card.className = `tool-card ${type === "error" ? "error" : type === "result" ? "success" : ""}`;
+
+      const header = document.createElement("div");
+      header.className = "tool-header";
+      header.innerHTML = `<span class="icon">${type === "call" ? "🔧" : type === "result" ? "✅" : "❌"}</span>
+        <span class="name">${name}</span>
+        <span style="margin-left:auto;opacity:0.5;font-size:11px">${type === "call" ? "args" : type}</span>`;
+
+      const body = document.createElement("div");
+      body.className = "tool-body";
+      body.textContent = typeof content === "string" ? content : JSON.stringify(content, null, 2);
+
+      header.onclick = () => card.classList.toggle("expanded");
+
+      card.appendChild(header);
+      card.appendChild(body);
+      return card;
+    }
+
+    // ── UI helpers ───────────────────────────────────────────────────
+    function addMessageBubble(role, text) {
+      if ($emptyState) $emptyState.style.display = "none";
+
+      const msg = document.createElement("div");
+      msg.className = `msg ${role}`;
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = role === "user" ? "👤" : "⚡";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = text;
+
+      msg.appendChild(avatar);
+      msg.appendChild(bubble);
+      $messages.appendChild(msg);
+      scrollToBottom();
+
+      return bubble;
+    }
+
+    function scrollToBottom() {
+      $messages.scrollTop = $messages.scrollHeight;
+    }
+
+    // Auto-resize textarea
+    function autoResizeInput() {
+      $input.style.height = "auto";
+      $input.style.height = Math.min($input.scrollHeight, 160) + "px";
+    }
+
+    $input.addEventListener("input", autoResizeInput);
+
+    $input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Clear chat
+    $("#clearBtn").onclick = () => {
+      chatHistory = [];
+      $messages.innerHTML = "";
+      if ($emptyState) {
+        $messages.appendChild($emptyState);
+        $emptyState.style.display = connected ? "none" : "flex";
+      }
+    };
+  </script>
+</body>
+</html>
