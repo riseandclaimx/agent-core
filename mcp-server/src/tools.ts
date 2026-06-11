@@ -124,7 +124,7 @@ export function getAllTools(): Record<string, ToolDef> {
       shape: {
         content: z.string().describe("Memory content to store"),
         scope: z.enum(["global", "user", "channel"]).default("global").describe("Memory scope"),
-        scopeId: z.string().optional().describe("User/channel ID for scoped memories"),
+        scopeId: z.string().nullish().describe("User/channel ID for scoped memories"),
         tags: z.array(z.string()).default([]).describe("Tags for categorization"),
         importance: z.number().min(1).max(10).default(5).describe("Importance 1-10"),
         metadata: z.record(z.unknown()).default({}).describe("Additional metadata"),
@@ -170,8 +170,8 @@ export function getAllTools(): Record<string, ToolDef> {
       shape: {
         query: z.string().describe("Search query"),
         scope: z.enum(["global", "user", "channel"]).default("global"),
-        scopeId: z.string().optional().describe("User/channel ID for scoped search"),
-        tags: z.array(z.string()).optional().describe("Filter by tags"),
+        scopeId: z.string().nullish().describe("User/channel ID for scoped search"),
+        tags: z.array(z.string()).nullish().describe("Filter by tags"),
         minImportance: z.number().min(1).max(10).default(1),
         limit: z.number().min(1).max(20).default(5),
         similarityThreshold: z.number().min(0).max(1).default(0.72),
@@ -221,7 +221,7 @@ export function getAllTools(): Record<string, ToolDef> {
       description: "Verify a Slack user identity and look up their profile",
       shape: {
         userId: z.string().describe("Slack user ID"),
-        teamId: z.string().optional().describe("Slack team ID"),
+        teamId: z.string().nullish().describe("Slack team ID"),
       },
       handler: async (args) => {
         const db = getDb();
@@ -260,7 +260,7 @@ export function getAllTools(): Record<string, ToolDef> {
         name: z.string().describe("Task name"),
         payload: z.record(z.unknown()).describe("Task payload"),
         priority: z.number().min(1).max(10).default(5),
-        scheduledFor: z.string().optional().describe("ISO timestamp to run"),
+        scheduledFor: z.string().nullish().describe("ISO timestamp to run"),
         maxRetries: z.number().min(0).max(10).default(3),
         tags: z.array(z.string()).default([]),
       },
@@ -325,11 +325,11 @@ export function getAllTools(): Record<string, ToolDef> {
     log_search: {
       description: "Search structured logs",
       shape: {
-        query: z.string().optional().describe("Search query (message text)"),
-        level: z.enum(["debug", "info", "warn", "error", "fatal"]).optional(),
-        userId: z.string().optional(),
-        traceId: z.string().optional(),
-        since: z.string().optional().describe("ISO timestamp"),
+        query: z.string().nullish().describe("Search query (message text)"),
+        level: z.enum(["debug", "info", "warn", "error", "fatal"]).nullish(),
+        userId: z.string().nullish(),
+        traceId: z.string().nullish(),
+        since: z.string().nullish().describe("ISO timestamp"),
         limit: z.number().min(1).max(100).default(20),
       },
       handler: async (args) => {
@@ -416,8 +416,8 @@ export function getAllTools(): Record<string, ToolDef> {
     model_usage_summary: {
       description: "Get model usage statistics and costs",
       shape: {
-        since: z.string().optional().describe("ISO timestamp to start from"),
-        model: z.string().optional().describe("Filter by model"),
+        since: z.string().nullish().describe("ISO timestamp to start from"),
+        model: z.string().nullish().describe("Filter by model"),
         limit: z.number().default(50),
       },
       handler: async (args) => {
@@ -444,7 +444,7 @@ export function getAllTools(): Record<string, ToolDef> {
       description: "Fetch a URL and return the response",
       shape: {
         url: z.string().url().describe("URL to fetch"),
-        headers: z.record(z.string()).optional().describe("Request headers"),
+        headers: z.record(z.string()).nullish().describe("Request headers"),
         timeout: z.number().default(10000),
       },
       handler: async (args) => {
@@ -471,7 +471,7 @@ export function getAllTools(): Record<string, ToolDef> {
         action: z.string().describe("Action performed"),
         resource: z.string().describe("Resource affected"),
         result: z.enum(["success", "failure", "denied"]),
-        metadata: z.record(z.unknown()).optional(),
+        metadata: z.record(z.unknown()).nullish(),
       },
       handler: async (args) => {
         const db = getDb();
