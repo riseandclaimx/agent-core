@@ -275,6 +275,24 @@ const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     baseUrl: "https://api.cerebras.ai/v1",
     envKey: "CEREBRAS_API_KEY",
   },
+  github: {
+    // GitHub Models — OpenAI-compatible, uses GitHub PAT as the key
+    baseUrl: "https://models.inference.ai.azure.com",
+    envKey: "GITHUB_TOKEN",
+  },
+  mistral: {
+    baseUrl: "https://api.mistral.ai/v1",
+    envKey: "MISTRAL_API_KEY",
+  },
+  cohere: {
+    // Cohere Chat via OpenAI-compatible endpoint
+    baseUrl: "https://api.cohere.com/compatibility/v1",
+    envKey: "COHERE_API_KEY",
+  },
+  openrouter: {
+    baseUrl: "https://openrouter.ai/api/v1",
+    envKey: "OPENROUTER_API_KEY",
+  },
 };
 
 // ── OpenAI-compatible client factory ─────────────────────────────────────────

@@ -31,6 +31,20 @@ const MODEL_CATALOG: Record<string, { provider: string; model: string; label: st
   "anthropic:claude-sonnet-4-20250514": { provider: "anthropic", model: "claude-sonnet-4-20250514", label: "Claude Sonnet 4 ($3/M)" },
   "gemini:gemini-2.5-flash-preview-05-20": { provider: "gemini", model: "gemini-2.5-flash-preview-05-20", label: "Gemini 2.5 Flash ($0.15/M)" },
   "cerebras:llama-4-scout-17b-16e-instruct": { provider: "cerebras", model: "llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout (Cerebras, free)" },
+  // GitHub Models (uses GitHub PAT, OpenAI-compatible)
+  "github:gpt-4o-mini": { provider: "github", model: "gpt-4o-mini", label: "GPT-4o Mini (GitHub)" },
+  "github:gpt-4o": { provider: "github", model: "gpt-4o", label: "GPT-4o (GitHub)" },
+  // Mistral
+  "mistral:mistral-large-latest": { provider: "mistral", model: "mistral-large-latest", label: "Mistral Large ($2/M)" },
+  "mistral:mistral-small-latest": { provider: "mistral", model: "mistral-small-latest", label: "Mistral Small ($0.10/M)" },
+  "mistral:codestral-latest": { provider: "mistral", model: "codestral-latest", label: "Codestral ($0.30/M)" },
+  // Cohere
+  "cohere:command-a-03-2025": { provider: "cohere", model: "command-a-03-2025", label: "Command A ($2.50/M)" },
+  "cohere:command-r-plus-08-2024": { provider: "cohere", model: "command-r-plus-08-2024", label: "Command R+ ($2.50/M)" },
+  // OpenRouter (pass-through to any model)
+  "openrouter:google/gemini-2.5-flash-preview": { provider: "openrouter", model: "google/gemini-2.5-flash-preview", label: "Gemini 2.5 Flash (OpenRouter)" },
+  "openrouter:anthropic/claude-sonnet-4": { provider: "openrouter", model: "anthropic/claude-sonnet-4", label: "Claude Sonnet 4 (OpenRouter)" },
+  "openrouter:meta-llama/llama-4-maverick": { provider: "openrouter", model: "meta-llama/llama-4-maverick", label: "Llama 4 Maverick (OpenRouter)" },
 };
 
 export class LLMRouter {
@@ -48,6 +62,10 @@ export class LLMRouter {
       { name: "anthropic", envKey: "ANTHROPIC_API_KEY", baseUrl: "https://api.anthropic.com", format: "anthropic" },
       { name: "gemini", envKey: "GEMINI_API_KEY", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai", format: "openai" },
       { name: "cerebras", envKey: "CEREBRAS_API_KEY", baseUrl: "https://api.cerebras.ai/v1", format: "openai" },
+      { name: "github", envKey: "GITHUB_TOKEN", baseUrl: "https://models.inference.ai.azure.com", format: "openai" },
+      { name: "mistral", envKey: "MISTRAL_API_KEY", baseUrl: "https://api.mistral.ai/v1", format: "openai" },
+      { name: "cohere", envKey: "COHERE_API_KEY", baseUrl: "https://api.cohere.com/compatibility/v1", format: "openai" },
+      { name: "openrouter", envKey: "OPENROUTER_API_KEY", baseUrl: "https://openrouter.ai/api/v1", format: "openai" },
     ];
 
     for (const def of providerDefs) {
