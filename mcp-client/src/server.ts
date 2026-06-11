@@ -7,6 +7,7 @@
  * 3. Connects to the MCP server and executes tool calls
  * 4. Streams responses back to the UI via SSE
  */
+import "dotenv/config";
 import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

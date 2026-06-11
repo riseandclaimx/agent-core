@@ -6,6 +6,7 @@
  * Auth: Bearer token (MCP_API_KEY)
  * Deploy: Fly.io
  */
+import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express, { Request, Response, NextFunction } from "express";
