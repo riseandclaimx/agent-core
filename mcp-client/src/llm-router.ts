@@ -176,7 +176,7 @@ export class LLMRouter {
     const toolCalls: ToolCall[] = (choice?.tool_calls || []).map((tc) => ({
       id: tc.id,
       name: tc.function.name,
-      args: safeJsonParse(tc.function.arguments),
+      args: stripNullArgs(safeJsonParse(tc.function.arguments)),
     }));
 
     return {
@@ -276,7 +276,7 @@ export class LLMRouter {
       if (block.type === "text") {
         content += block.text;
       } else if (block.type === "tool_use") {
-        toolCalls.push({ id: block.id, name: block.name, args: block.input });
+        toolCalls.push({ id: block.id, name: block.name, args: stripNullArgs(block.input) });
       }
     }
 
@@ -302,4 +302,19 @@ function safeJsonParse(str: string): Record<string, unknown> {
   } catch {
     return { raw: str };
   }
+}
+
+/**
+ * Strip null values from tool call arguments.
+ * Some LLMs generate "key": null for optional fields, which fails
+ * strict schema validation (e.g. Groq expects the key to be omitted, not null).
+ */
+function stripNullArgs(args: Record<string, unknown>): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(args)) {
+    if (value !== null) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
 }
