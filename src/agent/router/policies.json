@@ -1,15 +1,44 @@
 {
-  "version": "1.0",
+  "version": "2.0",
   "defaultModel": "groq:openai/gpt-oss-20b",
+
+  "tiers": {
+    "1_fast": {
+      "description": "Speed layer — Groq. Handles most requests instantly.",
+      "models": ["groq:openai/gpt-oss-20b", "groq:openai/gpt-oss-120b"]
+    },
+    "2_reasoning": {
+      "description": "Deeper thinking — DeepSeek + Moonshot/Kimi.",
+      "models": ["deepseek:deepseek-chat", "deepseek:deepseek-reasoner", "moonshot:kimi-latest"]
+    },
+    "3_workhorse": {
+      "description": "Main workhorse — Gemini free tier, high limits, long context.",
+      "models": ["gemini:gemini-2.5-flash", "gemini:gemini-2.0-flash", "gemini:gemini-1.5-pro"]
+    },
+    "4_premium": {
+      "description": "Escalation — GitHub Models GPT-5 when lower tiers aren't enough.",
+      "models": ["github:gpt-5", "github:gpt-4o"]
+    },
+    "specialty_coding": {
+      "description": "Coding specialists — Mistral Codestral + Kilo AI.",
+      "models": ["mistral:codestral-latest", "kilo:kilo-coder", "mistral:mistral-large-latest"]
+    },
+    "specialty_rag": {
+      "description": "RAG/search/embeddings — Cohere's strength.",
+      "models": ["cohere:command-a-03-2025", "cohere:command-r-plus-08-2024"]
+    },
+    "fallback": {
+      "description": "OpenRouter as last-resort fallback to any model.",
+      "models": ["openrouter:google/gemini-2.5-flash-preview", "openrouter:anthropic/claude-sonnet-4"]
+    }
+  },
+
   "models": {
     "groq:openai/gpt-oss-20b": {
       "provider": "groq",
       "model": "openai/gpt-oss-20b",
-      "capabilities": [
-        "chat",
-        "tools",
-        "reasoning"
-      ],
+      "tier": 1,
+      "capabilities": ["chat", "tools", "reasoning"],
       "contextWindow": 131072,
       "costPer1MIn": 0,
       "costPer1MOut": 0,
@@ -17,44 +46,23 @@
       "quality": "high",
       "freeTier": true
     },
-    "groq:llama-3.3-70b-versatile": {
+    "groq:openai/gpt-oss-120b": {
       "provider": "groq",
-      "model": "llama-3.3-70b-versatile",
-      "capabilities": [
-        "chat",
-        "tools",
-        "reasoning"
-      ],
+      "model": "openai/gpt-oss-120b",
+      "tier": 1,
+      "capabilities": ["chat", "tools", "reasoning", "complex_reasoning"],
       "contextWindow": 131072,
       "costPer1MIn": 0,
       "costPer1MOut": 0,
       "speed": "fast",
-      "quality": "high",
-      "freeTier": true
-    },
-    "groq:llama-3.1-8b-instant": {
-      "provider": "groq",
-      "model": "llama-3.1-8b-instant",
-      "capabilities": [
-        "chat",
-        "tools"
-      ],
-      "contextWindow": 131072,
-      "costPer1MIn": 0,
-      "costPer1MOut": 0,
-      "speed": "very_fast",
-      "quality": "medium",
+      "quality": "very_high",
       "freeTier": true
     },
     "deepseek:deepseek-chat": {
       "provider": "deepseek",
       "model": "deepseek-chat",
-      "capabilities": [
-        "chat",
-        "tools",
-        "reasoning",
-        "coding"
-      ],
+      "tier": 2,
+      "capabilities": ["chat", "tools", "reasoning", "coding"],
       "contextWindow": 65536,
       "costPer1MIn": 0.14,
       "costPer1MOut": 0.28,
@@ -65,11 +73,8 @@
     "deepseek:deepseek-reasoner": {
       "provider": "deepseek",
       "model": "deepseek-reasoner",
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "coding"
-      ],
+      "tier": 2,
+      "capabilities": ["chat", "reasoning", "coding", "complex_reasoning"],
       "contextWindow": 65536,
       "costPer1MIn": 0.55,
       "costPer1MOut": 2.19,
@@ -77,18 +82,38 @@
       "quality": "highest",
       "freeTier": false
     },
-    "gemini:gemini-1.5-flash": {
+    "moonshot:kimi-latest": {
+      "provider": "moonshot",
+      "model": "kimi-latest",
+      "tier": 2,
+      "capabilities": ["chat", "tools", "reasoning", "long_context"],
+      "contextWindow": 131072,
+      "costPer1MIn": 0.20,
+      "costPer1MOut": 0.60,
+      "speed": "medium",
+      "quality": "high",
+      "freeTier": false
+    },
+    "gemini:gemini-2.5-flash": {
       "provider": "gemini",
-      "model": "gemini-1.5-flash",
-      "capabilities": [
-        "chat",
-        "tools",
-        "vision",
-        "long_context"
-      ],
+      "model": "gemini-2.5-flash",
+      "tier": 3,
+      "capabilities": ["chat", "tools", "vision", "long_context", "reasoning", "coding"],
+      "contextWindow": 1048576,
+      "costPer1MIn": 0.15,
+      "costPer1MOut": 0.60,
+      "speed": "fast",
+      "quality": "very_high",
+      "freeTier": true
+    },
+    "gemini:gemini-2.0-flash": {
+      "provider": "gemini",
+      "model": "gemini-2.0-flash",
+      "tier": 3,
+      "capabilities": ["chat", "tools", "vision", "long_context"],
       "contextWindow": 1048576,
       "costPer1MIn": 0.075,
-      "costPer1MOut": 0.3,
+      "costPer1MOut": 0.30,
       "speed": "fast",
       "quality": "high",
       "freeTier": true
@@ -96,185 +121,201 @@
     "gemini:gemini-1.5-pro": {
       "provider": "gemini",
       "model": "gemini-1.5-pro",
-      "capabilities": [
-        "chat",
-        "tools",
-        "vision",
-        "long_context",
-        "reasoning"
-      ],
+      "tier": 3,
+      "capabilities": ["chat", "tools", "vision", "long_context", "reasoning"],
       "contextWindow": 2097152,
-      "costPer1MIn": 3.5,
-      "costPer1MOut": 10.5,
+      "costPer1MIn": 3.50,
+      "costPer1MOut": 10.50,
       "speed": "medium",
       "quality": "very_high",
       "freeTier": false
     },
-    "openai:gpt-4o-mini": {
-      "provider": "openai",
-      "model": "gpt-4o-mini",
-      "capabilities": [
-        "chat",
-        "tools",
-        "vision",
-        "reasoning"
-      ],
+    "github:gpt-5": {
+      "provider": "github",
+      "model": "gpt-5",
+      "tier": 4,
+      "capabilities": ["chat", "tools", "vision", "reasoning", "complex_reasoning", "coding"],
       "contextWindow": 128000,
-      "costPer1MIn": 0.15,
-      "costPer1MOut": 0.6,
+      "costPer1MIn": 0,
+      "costPer1MOut": 0,
+      "speed": "medium",
+      "quality": "highest",
+      "freeTier": true
+    },
+    "github:gpt-4o": {
+      "provider": "github",
+      "model": "gpt-4o",
+      "tier": 4,
+      "capabilities": ["chat", "tools", "vision", "reasoning"],
+      "contextWindow": 128000,
+      "costPer1MIn": 0,
+      "costPer1MOut": 0,
+      "speed": "fast",
+      "quality": "very_high",
+      "freeTier": true
+    },
+    "mistral:codestral-latest": {
+      "provider": "mistral",
+      "model": "codestral-latest",
+      "tier": 0,
+      "capabilities": ["coding", "chat"],
+      "contextWindow": 32000,
+      "costPer1MIn": 0.30,
+      "costPer1MOut": 0.90,
+      "speed": "fast",
+      "quality": "very_high",
+      "freeTier": false,
+      "specialty": "coding"
+    },
+    "mistral:mistral-large-latest": {
+      "provider": "mistral",
+      "model": "mistral-large-latest",
+      "tier": 0,
+      "capabilities": ["chat", "tools", "reasoning", "coding"],
+      "contextWindow": 128000,
+      "costPer1MIn": 2.00,
+      "costPer1MOut": 6.00,
+      "speed": "medium",
+      "quality": "very_high",
+      "freeTier": false,
+      "specialty": "coding"
+    },
+    "kilo:kilo-coder": {
+      "provider": "kilo",
+      "model": "kilo-coder",
+      "tier": 0,
+      "capabilities": ["coding", "chat"],
+      "contextWindow": 32000,
+      "costPer1MIn": 0,
+      "costPer1MOut": 0,
       "speed": "fast",
       "quality": "high",
-      "freeTier": false
+      "freeTier": true,
+      "specialty": "coding"
     },
-    "openai:gpt-4o": {
-      "provider": "openai",
-      "model": "gpt-4o",
-      "capabilities": [
-        "chat",
-        "tools",
-        "vision",
-        "reasoning"
-      ],
-      "contextWindow": 128000,
-      "costPer1MIn": 5,
-      "costPer1MOut": 15,
+    "cohere:command-a-03-2025": {
+      "provider": "cohere",
+      "model": "command-a-03-2025",
+      "tier": 0,
+      "capabilities": ["chat", "tools", "rag", "search"],
+      "contextWindow": 256000,
+      "costPer1MIn": 2.50,
+      "costPer1MOut": 10.00,
       "speed": "medium",
+      "quality": "very_high",
+      "freeTier": false,
+      "specialty": "rag"
+    },
+    "cohere:command-r-plus-08-2024": {
+      "provider": "cohere",
+      "model": "command-r-plus-08-2024",
+      "tier": 0,
+      "capabilities": ["chat", "tools", "rag", "search"],
+      "contextWindow": 128000,
+      "costPer1MIn": 2.50,
+      "costPer1MOut": 10.00,
+      "speed": "medium",
+      "quality": "very_high",
+      "freeTier": false,
+      "specialty": "rag"
+    },
+    "openrouter:google/gemini-2.5-flash-preview": {
+      "provider": "openrouter",
+      "model": "google/gemini-2.5-flash-preview",
+      "tier": 99,
+      "capabilities": ["chat", "tools", "vision", "reasoning"],
+      "contextWindow": 1048576,
+      "costPer1MIn": 0.15,
+      "costPer1MOut": 0.60,
+      "speed": "fast",
       "quality": "very_high",
       "freeTier": false
     },
-    "anthropic:claude-3.5-sonnet": {
-      "provider": "anthropic",
-      "model": "claude-3.5-sonnet",
-      "capabilities": [
-        "chat",
-        "tools",
-        "vision",
-        "reasoning",
-        "coding"
-      ],
+    "openrouter:anthropic/claude-sonnet-4": {
+      "provider": "openrouter",
+      "model": "anthropic/claude-sonnet-4",
+      "tier": 99,
+      "capabilities": ["chat", "tools", "vision", "reasoning", "coding"],
       "contextWindow": 200000,
-      "costPer1MIn": 3,
-      "costPer1MOut": 15,
+      "costPer1MIn": 3.00,
+      "costPer1MOut": 15.00,
       "speed": "medium",
       "quality": "highest",
       "freeTier": false
-    },
-    "cerebras:llama-3.3-70b": {
-      "provider": "cerebras",
-      "model": "llama-3.3-70b",
-      "capabilities": [
-        "chat",
-        "reasoning"
-      ],
-      "contextWindow": 8192,
-      "costPer1MIn": 0,
-      "costPer1MOut": 0,
-      "speed": "fastest",
-      "quality": "high",
-      "freeTier": true
     }
   },
+
   "routingRules": [
     {
       "name": "simple_qa",
       "conditions": {
-        "taskTypes": [
-          "general",
-          "qa",
-          "explanation"
-        ],
+        "taskTypes": ["general", "qa", "explanation"],
         "maxComplexity": "low",
         "requiresTools": false
       },
-      "model": "groq:llama-3.1-8b-instant",
-      "fallback": [
-        "groq:openai/gpt-oss-20b",
-        "cerebras:llama-3.3-70b"
-      ]
+      "model": "groq:openai/gpt-oss-20b",
+      "fallback": ["gemini:gemini-2.5-flash", "github:gpt-4o"]
     },
     {
       "name": "tool_use",
       "conditions": {
-        "taskTypes": [
-          "general",
-          "automation",
-          "data_retrieval"
-        ],
+        "taskTypes": ["general", "automation", "data_retrieval"],
         "requiresTools": true
       },
       "model": "groq:openai/gpt-oss-20b",
-      "fallback": [
-        "groq:llama-3.3-70b-versatile",
-        "openai:gpt-4o-mini"
-      ]
+      "fallback": ["gemini:gemini-2.5-flash", "deepseek:deepseek-chat", "github:gpt-4o"]
     },
     {
       "name": "coding",
       "conditions": {
-        "taskTypes": [
-          "coding",
-          "debugging",
-          "code_review"
-        ],
-        "requiresTools": false
+        "taskTypes": ["coding", "debugging", "code_review"]
       },
-      "model": "deepseek:deepseek-chat",
-      "fallback": [
-        "anthropic:claude-3.5-sonnet",
-        "openai:gpt-4o"
-      ]
+      "model": "mistral:codestral-latest",
+      "fallback": ["kilo:kilo-coder", "groq:openai/gpt-oss-120b", "deepseek:deepseek-chat", "github:gpt-5"]
+    },
+    {
+      "name": "complex_reasoning",
+      "conditions": {
+        "taskTypes": ["analysis", "planning", "strategy", "math"],
+        "minComplexity": "high"
+      },
+      "model": "groq:openai/gpt-oss-120b",
+      "fallback": ["deepseek:deepseek-reasoner", "moonshot:kimi-latest", "github:gpt-5"]
     },
     {
       "name": "long_context",
       "conditions": {
         "minContextTokens": 50000
       },
-      "model": "gemini:gemini-1.5-flash",
-      "fallback": [
-        "gemini:gemini-1.5-pro",
-        "anthropic:claude-3.5-sonnet"
-      ]
-    },
-    {
-      "name": "complex_reasoning",
-      "conditions": {
-        "taskTypes": [
-          "analysis",
-          "planning",
-          "strategy",
-          "math"
-        ],
-        "minComplexity": "high"
-      },
-      "model": "deepseek:deepseek-reasoner",
-      "fallback": [
-        "anthropic:claude-3.5-sonnet",
-        "openai:gpt-4o"
-      ]
+      "model": "gemini:gemini-2.5-flash",
+      "fallback": ["gemini:gemini-1.5-pro", "moonshot:kimi-latest", "github:gpt-5"]
     },
     {
       "name": "vision",
       "conditions": {
         "requiresVision": true
       },
-      "model": "openai:gpt-4o-mini",
-      "fallback": [
-        "gemini:gemini-1.5-flash",
-        "anthropic:claude-3.5-sonnet"
-      ]
+      "model": "gemini:gemini-2.5-flash",
+      "fallback": ["github:gpt-4o", "gemini:gemini-1.5-pro"]
     },
     {
-      "name": "premium_fallback",
+      "name": "rag_search",
+      "conditions": {
+        "taskTypes": ["search", "rag", "retrieval", "summarization"]
+      },
+      "model": "cohere:command-a-03-2025",
+      "fallback": ["cohere:command-r-plus-08-2024", "gemini:gemini-2.5-flash", "groq:openai/gpt-oss-20b"]
+    },
+    {
+      "name": "premium_escalation",
       "conditions": {
         "premium": true
       },
-      "model": "anthropic:claude-3.5-sonnet",
-      "fallback": [
-        "openai:gpt-4o",
-        "gemini:gemini-1.5-pro"
-      ]
+      "model": "github:gpt-5",
+      "fallback": ["deepseek:deepseek-reasoner", "openrouter:anthropic/claude-sonnet-4"]
     }
   ],
+
   "costLimits": {
     "perRequestUsd": 0.5,
     "perUserDailyUsd": 5.0,

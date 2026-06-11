@@ -45,6 +45,11 @@ const MODEL_CATALOG: Record<string, { provider: string; model: string; label: st
   "openrouter:google/gemini-2.5-flash-preview": { provider: "openrouter", model: "google/gemini-2.5-flash-preview", label: "Gemini 2.5 Flash (OpenRouter)" },
   "openrouter:anthropic/claude-sonnet-4": { provider: "openrouter", model: "anthropic/claude-sonnet-4", label: "Claude Sonnet 4 (OpenRouter)" },
   "openrouter:meta-llama/llama-4-maverick": { provider: "openrouter", model: "meta-llama/llama-4-maverick", label: "Llama 4 Maverick (OpenRouter)" },
+  // Moonshot / Kimi
+  "moonshot:kimi-latest": { provider: "moonshot", model: "kimi-latest", label: "Kimi Latest (Moonshot)" },
+  "moonshot:moonshot-v1-128k": { provider: "moonshot", model: "moonshot-v1-128k", label: "Moonshot 128k" },
+  // Kilo AI
+  "kilo:kilo-coder": { provider: "kilo", model: "kilo-coder", label: "Kilo Coder" },
 };
 
 export class LLMRouter {
@@ -66,6 +71,8 @@ export class LLMRouter {
       { name: "mistral", envKey: "MISTRAL_API_KEY", baseUrl: "https://api.mistral.ai/v1", format: "openai" },
       { name: "cohere", envKey: "COHERE_API_KEY", baseUrl: "https://api.cohere.com/compatibility/v1", format: "openai" },
       { name: "openrouter", envKey: "OPENROUTER_API_KEY", baseUrl: "https://openrouter.ai/api/v1", format: "openai" },
+      { name: "moonshot", envKey: "MOONSHOT_API_KEY", baseUrl: "https://api.moonshot.cn/v1", format: "openai" },
+      { name: "kilo", envKey: "KILO_API_KEY", baseUrl: "https://api.kilo-ai.com/v1", format: "openai" },
     ];
 
     for (const def of providerDefs) {

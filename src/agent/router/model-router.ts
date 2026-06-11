@@ -293,6 +293,16 @@ const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     baseUrl: "https://openrouter.ai/api/v1",
     envKey: "OPENROUTER_API_KEY",
   },
+  moonshot: {
+    // MoonshotAI / Kimi — OpenAI-compatible
+    baseUrl: "https://api.moonshot.cn/v1",
+    envKey: "MOONSHOT_API_KEY",
+  },
+  kilo: {
+    // Kilo AI — OpenAI-compatible coding assistant
+    baseUrl: "https://api.kilo-ai.com/v1",
+    envKey: "KILO_API_KEY",
+  },
 };
 
 // ── OpenAI-compatible client factory ─────────────────────────────────────────
