@@ -299,8 +299,8 @@ const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     envKey: "MOONSHOT_API_KEY",
   },
   kilo: {
-    // Kilo AI — OpenAI-compatible coding assistant
-    baseUrl: "https://api.kilo-ai.com/v1",
+    // Kilo AI Gateway — OpenAI-compatible, routes to hundreds of models
+    baseUrl: "https://api.kilo.ai/api/gateway",
     envKey: "KILO_API_KEY",
   },
 };

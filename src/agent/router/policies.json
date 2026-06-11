@@ -180,18 +180,19 @@
       "freeTier": false,
       "specialty": "coding"
     },
-    "kilo:kilo-coder": {
+    "kilo:codestral-latest": {
       "provider": "kilo",
-      "model": "kilo-coder",
+      "model": "codestral-latest",
       "tier": 0,
       "capabilities": ["coding", "chat"],
       "contextWindow": 32000,
       "costPer1MIn": 0,
       "costPer1MOut": 0,
       "speed": "fast",
-      "quality": "high",
-      "freeTier": true,
-      "specialty": "coding"
+      "quality": "very_high",
+      "freeTier": false,
+      "specialty": "coding",
+      "note": "Kilo Gateway routes to Codestral — can swap model ID for any supported model"
     },
     "cohere:command-a-03-2025": {
       "provider": "cohere",
@@ -271,7 +272,7 @@
         "taskTypes": ["coding", "debugging", "code_review"]
       },
       "model": "mistral:codestral-latest",
-      "fallback": ["kilo:kilo-coder", "groq:openai/gpt-oss-120b", "deepseek:deepseek-chat", "github:gpt-5"]
+      "fallback": ["kilo:codestral-latest", "groq:openai/gpt-oss-120b", "deepseek:deepseek-chat", "github:gpt-5"]
     },
     {
       "name": "complex_reasoning",

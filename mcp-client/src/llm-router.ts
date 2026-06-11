@@ -48,8 +48,8 @@ const MODEL_CATALOG: Record<string, { provider: string; model: string; label: st
   // Moonshot / Kimi
   "moonshot:kimi-latest": { provider: "moonshot", model: "kimi-latest", label: "Kimi Latest (Moonshot)" },
   "moonshot:moonshot-v1-128k": { provider: "moonshot", model: "moonshot-v1-128k", label: "Moonshot 128k" },
-  // Kilo AI
-  "kilo:kilo-coder": { provider: "kilo", model: "kilo-coder", label: "Kilo Coder" },
+  // Kilo AI Gateway (routes to any model — using Codestral for coding)
+  "kilo:codestral-latest": { provider: "kilo", model: "codestral-latest", label: "Codestral (Kilo Gateway)" },
 };
 
 export class LLMRouter {
@@ -72,7 +72,7 @@ export class LLMRouter {
       { name: "cohere", envKey: "COHERE_API_KEY", baseUrl: "https://api.cohere.com/compatibility/v1", format: "openai" },
       { name: "openrouter", envKey: "OPENROUTER_API_KEY", baseUrl: "https://openrouter.ai/api/v1", format: "openai" },
       { name: "moonshot", envKey: "MOONSHOT_API_KEY", baseUrl: "https://api.moonshot.cn/v1", format: "openai" },
-      { name: "kilo", envKey: "KILO_API_KEY", baseUrl: "https://api.kilo-ai.com/v1", format: "openai" },
+      { name: "kilo", envKey: "KILO_API_KEY", baseUrl: "https://api.kilo.ai/api/gateway", format: "openai" },
     ];
 
     for (const def of providerDefs) {
